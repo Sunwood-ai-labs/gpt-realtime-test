@@ -13,12 +13,12 @@ if (!apiKey) {
 
 const app = express();
 
-// Serve static files from the project root so index.html and assets are available
+// Serve static files from the project root so frontend.html and assets are available
 app.use(express.static(process.cwd()));
 
-// Serve index.html at the root path
+// Serve frontend.html at the root path
 app.get("/", (req, res) => {
-    res.sendFile(path.resolve("index.html"));
+    res.sendFile(path.resolve("frontend.html"));
 });
 
 const sessionConfig = JSON.stringify({
