@@ -1,59 +1,68 @@
-# Voice Agent - Realtime demo
+# 🎤 Voice Agent – Realtime Demo
 
-A tiny Node.js + Express demo that serves a WebRTC-based realtime "voice agent" client (`index.html`). It issues ephemeral tokens via `/token` and tells the OpenAI Realtime model to call a Hugging Face-hosted MCP tool for current Japan Standard Time.
+| ![Realtime Voice Agent preview](./header.webp) |
+| :--: |
 
-## What this repo contains
+| ![Node.js badge](https://img.shields.io/badge/Node.js-18%2B-43853d?logo=node.js&logoColor=white) ![Express badge](https://img.shields.io/badge/Express-5.1.0-000000?logo=express&logoColor=white) ![Dotenv badge](https://img.shields.io/badge/Dotenv-17.2.1-222222) |
+| :--: |
 
-- `index.html` – client-only demo that asks for an API key and creates a WebRTC session with the realtime model.
-- `frontend.html` – server-backed demo that fetches `/token` before creating the WebRTC session.
-- `server.js` – Express server that serves static files and proxies the ephemeral token creation request.
-- `package.json` – minimal manifest (`npm start`, dependencies: `express`, `dotenv`).
+OpenAI Realtime API voice demo with optional MCP tool integration.
 
-## Requirements
+## 📚 目次
+- [🌐 概要](#-概要)
+- [🛠️ 要件](#️-要件)
+- [🚀 クイックスタート](#-クイックスタート)
+- [⚙️ 環境変数](#️-環境変数)
+- [🔧 仕組み](#-仕組み)
+- [🧪 MCP 検証 (任意)](#-mcp-検証-任意)
+- [🩺 トラブルシューティング](#-トラブルシューティング)
+- [🔐 セキュリティメモ](#-セキュリティメモ)
+- [📸 スクリーンショット](#-スクリーンショット)
 
-- Node.js (18+ recommended)
+## 🌐 概要
+`index.html` はブラウザ単体のデモ、`frontend.html` はローカルサーバー経由でエフェメラルトークンを取得するデモです。`server.js` が静的ファイル提供と `/token` プロキシを担い、OpenAI Realtime モデルに Hugging Face MCP ツールを公開します。
+
+## 🛠️ 要件
+- Node.js 18 以降
 - npm
-- An OpenAI API key with access to the Realtime API
+- Realtime API にアクセスできる OpenAI API キー
 
-## Quick start
+## 🚀 クイックスタート
+1. 依存パッケージをインストールします。
+   ```cmd
+   npm install
+   ```
+2. `.env` を作成し、以下の環境変数を設定します。
+   ```env
+   OPENAI_API_KEY=sk-replace-with-your-key
+   MCP_SERVER_URL=https://makiai-get-time-mcp.hf.space/gradio_api/mcp/
+   MCP_SERVER_LABEL=hf-get-time
+   MCP_REQUIRE_APPROVAL=never
+   # MCP_AUTHORIZATION=Bearer example-token (必要な場合のみ)
+   ```
+3. サーバーを起動します。
+   ```cmd
+   npm start
+   ```
+4. ブラウザで http://localhost:3000 または http://localhost:3000/frontend.html にアクセスし、Realtime セッションを開始します。
 
-1. Install dependencies
+## ⚙️ 環境変数
+| 変数 | 必須 | 説明 |
+| --- | --- | --- |
+| `OPENAI_API_KEY` | ✅ | Realtime API にアクセスするための OpenAI キー。ローカルの `.env` にのみ保存してください。 |
+| `MCP_SERVER_URL` | ✅ | 公開されている MCP エンドポイント (例: Hugging Face Space)。 |
+| `MCP_SERVER_LABEL` | ✅ | クライアントに表示する MCP サーバー名。 |
+| `MCP_REQUIRE_APPROVAL` | ✅ | MCP ツール呼び出し時の承認モード。デモでは `never` を使用します。 |
+| `MCP_AUTHORIZATION` | ⛔️ | エンドポイントが追加認証を要求する場合のみ設定。未使用時は削除できます。 |
 
-    ```cmd
-    npm install
-    ```
+`.env.example` にサンプル値を揃えているので、必要項目の確認に活用してください。
 
-2. Provide configuration via environment variables
+## 🔧 仕組み
+- ブラウザデモは `/token` にリクエストし、サーバーが `https://api.openai.com/v1/realtime/client_secrets` へ POST してエフェメラルトークンを取得します。
+- セッション設定で `tools` に MCP サーバーを宣言し、必要に応じて `get_time_mcp_get_jp_time` を呼び出します。
+- `server.js` は Express で静的ファイルを返しつつ、JSON ボディを 1 MB まで受け付けるよう設定しています。
 
-    Create a `.env` file (the server uses `dotenv`) with at least:
-
-    ```
-    OPENAI_API_KEY=sk-REPLACE_WITH_YOUR_KEY
-    MCP_SERVER_URL=https://makiai-get-time-mcp.hf.space/gradio_api/mcp/
-    MCP_SERVER_LABEL=hf-get-time
-    MCP_REQUIRE_APPROVAL=never
-    ```
-
-    `MCP_SERVER_URL` points the realtime session at the Hugging Face MCP endpoint `MakiAi/get-time-mcp`, which exposes the `get_time_mcp_get_jp_time` tool.
-
-3. Start the server
-
-    ```cmd
-    npm start
-    ```
-
-    Browse to http://localhost:3000 or go directly to http://localhost:3000/frontend.html to begin a realtime session.
-
-## How it works
-
-- The browser demo requests `/token` from this server.
-- `server.js` forwards a POST to `https://api.openai.com/v1/realtime/client_secrets` using `OPENAI_API_KEY` and returns the ephemeral token JSON.
-- The session payload advertises the Hugging Face MCP tool using `MCP_SERVER_URL`. When the model decides it needs the current JST, it calls `get_time_mcp_get_jp_time` remotely.
-
-## Verifying the MCP configuration (optional)
-
-Use `curl.exe` (PowerShell) to confirm that the Hugging Face endpoint responds with the Streamable HTTP handshake:
-
+## 🧪 MCP 検証 (任意)
 ```powershell
 $body = @{ jsonrpc = "2.0"; id = 1; method = "initialize"; params = @{ protocolVersion = "2025-03-26"; clientInfo = @{ name = "curl"; version = "0.1" }; capabilities = @{} } } | ConvertTo-Json -Compress
 
@@ -63,17 +72,18 @@ curl.exe -i `
   -X POST $env:MCP_SERVER_URL `
   --data $body
 ```
+`200 OK`、`Content-Type: text/event-stream`、`mcp-session-id` ヘッダが返れば接続成功です。
 
-A `200 OK` with `Content-Type: text/event-stream` and a `mcp-session-id` header indicates the remote MCP server is reachable.
+## 🩺 トラブルシューティング
+- `/token` が 401/403 を返す場合は API キーの権限と `.env` 設定を再確認してください。
+- セッションが確立しても MCP ツールが呼ばれない場合は `MCP_SERVER_URL` が外部公開されているか確認してください。
+- 新しいツールを追加する際は、MCP サーバー側で公開した後 `.env` を更新しサーバーを再起動します。
 
-## Troubleshooting
+## 🔐 セキュリティメモ
+- 実際の API キーは決してリポジトリにコミットしないでください。`.env` を `.gitignore` に含めて運用します。
+- 外部デプロイ時は HTTPS を使い、信頼できるクライアントにのみエフェメラルトークンを配布してください。
+- 必要に応じて `MCP_AUTHORIZATION` を利用し、ツール呼び出しを保護してください。
 
-- `/token` fails or returns 401/403 – verify `OPENAI_API_KEY` has Realtime access and is present in the environment.
-- Realtime session connects but tool calls do nothing – confirm `MCP_SERVER_URL` is a public URL reachable from OpenAI (e.g., test with the `curl.exe` command above).
-- Need to call additional tools – host them on an MCP-compatible service and update the environment variables accordingly before restarting the server.
-
-## Security notes
-
-- Never commit real API keys; keep `.env` out of source control.
-- Host `server.js` behind HTTPS if you deploy it externally.
-- Ephemeral tokens should only flow to clients you trust.
+## 📸 スクリーンショット
+| *アプリの操作画面スクリーンショットをここに追加してください。* |
+| :--: |
