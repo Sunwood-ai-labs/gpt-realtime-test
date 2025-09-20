@@ -1,23 +1,18 @@
+<div align="center">
+
 # 🎤 Voice Agent – Realtime Demo
 
-| ![Realtime Voice Agent preview](./header.webp) |
-| :--: |
+![Realtime Voice Agent preview](./header.webp)
 
-| ![Node.js badge](https://img.shields.io/badge/Node.js-18%2B-43853d?logo=node.js&logoColor=white) ![Express badge](https://img.shields.io/badge/Express-5.1.0-000000?logo=express&logoColor=white) ![Dotenv badge](https://img.shields.io/badge/Dotenv-17.2.1-222222) |
-| :--: |
-
+<p>
+  <img src="https://img.shields.io/badge/Node.js-18%2B-43853d?logo=node.js&logoColor=white" alt="Node.js badge" />
+  <img src="https://img.shields.io/badge/Express-5.1.0-000000?logo=express&logoColor=white" alt="Express badge" />
+  <img src="https://img.shields.io/badge/Dotenv-17.2.1-222222" alt="Dotenv badge" />
+</p>
 OpenAI Realtime API voice demo with optional MCP tool integration.
 
-## 📚 目次
-- [🌐 概要](#-概要)
-- [🛠️ 要件](#️-要件)
-- [🚀 クイックスタート](#-クイックスタート)
-- [⚙️ 環境変数](#️-環境変数)
-- [🔧 仕組み](#-仕組み)
-- [🧪 MCP 検証 (任意)](#-mcp-検証-任意)
-- [🩺 トラブルシューティング](#-トラブルシューティング)
-- [🔐 セキュリティメモ](#-セキュリティメモ)
-- [📸 スクリーンショット](#-スクリーンショット)
+</div>
+
 
 ## 🌐 概要
 `index.html` はブラウザ単体のデモ、`frontend.html` はローカルサーバー経由でエフェメラルトークンを取得するデモです。`server.js` が静的ファイル提供と `/token` プロキシを担い、OpenAI Realtime モデルに Hugging Face MCP ツールを公開します。
@@ -87,3 +82,7 @@ curl.exe -i `
 ## 📸 スクリーンショット
 | *アプリの操作画面スクリーンショットをここに追加してください。* |
 | :--: |
+
+
+
+
