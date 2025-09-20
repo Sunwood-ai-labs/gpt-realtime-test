@@ -116,6 +116,14 @@
                 // We attempt to create a session and extract an ephemeral client secret from the JSON response.
                 // https://api.openai.com/v1/realtime/sessions OLD
                 const url = 'https://api.openai.com/v1/realtime/client_secrets';
+                const origin = window.location.origin || "";
+                const defaultMcpUrl = origin.startsWith("http") ? origin.replace(/\/$/, "") + "/mcp" : "http://localhost:3000/mcp";
+                const mcpTool = {
+                    type: "mcp",
+                    server_label: "local-mcp",
+                    server_url: defaultMcpUrl,
+                    require_approval: "never",
+                };
                 const body = {
                     session: {
                         type: "realtime",
@@ -125,6 +133,7 @@
                                 voice: "cedar", // marin
                             },
                         },
+                        tools: [mcpTool],
                     },
                 };
 
