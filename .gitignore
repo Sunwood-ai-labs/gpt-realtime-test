@@ -1,1 +1,4 @@
 node_modules
+.SourceSageAssets/DOCUMIND/Repository_summary.md
+.env
+package-lock.json
