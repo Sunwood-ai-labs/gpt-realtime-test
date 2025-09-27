@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Voice Agent — Realtime (Client-only)</title>
+    <style>
+        :root {
+            font-family: system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
+            font-size: 16px
+        }
+
+        body {
+            max-width: 900px;
+            margin: 36px auto;
+            padding: 0 16px;
+            color: #111
+        }
+
+        header h1 {
+            margin: .2rem 0
+        }
+
+        button {
+            padding: .5rem .9rem;
+            font-size: 1rem
+        }
+
+        #status {
+            margin-top: .5rem;
+            color: #555
+        }
+
+        pre#log {
+            background: #f7f7f8;
+            border: 1px solid #e1e1e6;
+            padding: 12px;
+            height: 220px;
+            overflow: auto
+        }
+
+        audio {
+            display: block;
+            margin-top: 12px
+        }
+
+        label {
+            display: block;
+            margin-top: 12px
+        }
+
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: .5rem;
+            margin-top: .25rem;
+            border: 1px solid #ccc;
+            border-radius: 4px
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Voice Agent — Realtime (Client-only)</h1>
+        <p>This demo requests an ephemeral token directly from OpenAI using the API key you enter below, then creates a
+            WebRTC session and plays remote audio from the realtime model.</p>
+    </header>
+
+    <main>
+        <label for="apiKey">OpenAI API Key (will be used only in this browser session)</label>
+        <input id="apiKey" type="password" placeholder="sk-..." aria-label="OpenAI API key" />
+
+        <div style="margin-top:12px">
+            <button id="startBtn">Start realtime session</button>
+            <button id="stopBtn" disabled>Stop</button>
+        </div>
+
+        <div id="status" aria-live="polite">Idle</div>
+
+        <h3>Log</h3>
+        <pre id="log"></pre>
+
+        <h3>Remote audio</h3>
+        <audio id="remoteAudio" autoplay controls></audio>
+    </main>
+
+    <script>
+        // Keep a minimal, well-documented startup flow and avoid top-level await.
+        (function () {
+            const startBtn = document.getElementById('startBtn');
+            const stopBtn = document.getElementById('stopBtn');
+            const statusEl = document.getElementById('status');
+            const logEl = document.getElementById('log');
+            const audioEl = document.getElementById('remoteAudio');
+            const apiKeyEl = document.getElementById('apiKey');
+
+            let pc = null;
+            let localStream = null;
+            let dc = null;
+
+            function log(...args) {
+                const line = `[${new Date().toLocaleTimeString()}] ${args.join(' ')}\n`;
+                logEl.textContent += line;
+                logEl.scrollTop = logEl.scrollHeight;
+            }
+
+            function setStatus(text) {
+                statusEl.textContent = text;
+                log(text);
+            }
+
+            async function createEphemeralKey(userKey) {
+                // Assumption: OpenAI realtime ephemeral session endpoint is POST /v1/realtime/sessions
+                // We attempt to create a session and extract an ephemeral client secret from the JSON response.
+                // https://api.openai.com/v1/realtime/sessions OLD
+                const url = 'https://api.openai.com/v1/realtime/client_secrets';
+                const origin = window.location.origin || "";
+                const defaultMcpUrl = origin.startsWith("http") ? origin.replace(/\/$/, "") + "/mcp" : "http://localhost:3000/mcp";
+                const mcpTool = {
+                    type: "mcp",
+                    server_label: "local-mcp",
+                    server_url: defaultMcpUrl,
+                    require_approval: "never",
+                };
+                const body = {
+                    session: {
+                        type: "realtime",
+                        model: "gpt-realtime",
+                        audio: {
+                            output: {
+                                voice: "cedar", // marin
+                            },
+                        },
+                        tools: [mcpTool],
+                    },
+                };
+
+                const resp = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${userKey}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(body)
+                });
+
+                if (!resp.ok) {
+                    const txt = await resp.text().catch(() => '');
+                    throw new Error('Failed to create ephemeral session: ' + resp.status + ' ' + txt);
+                }
+
+                const data = await resp.json();
+                // Try multiple possible shapes for the ephemeral key to be robust.
+                const ephemeral = (data && (data.client_secret && data.client_secret.value)) || data.value || data.ephemeral_key || data.access_token;
+                log('Ephemeral session response:');
+                log(JSON.stringify(data));
+                if (!ephemeral) throw new Error('Ephemeral key not found in session response');
+                return ephemeral;
+            }
+
+            async function startSession() {
+                startBtn.disabled = true;
+                setStatus('Preparing...');
+
+                const userKey = apiKeyEl.value && apiKeyEl.value.trim();
+                if (!userKey) {
+                    setStatus('Error: enter your OpenAI API key first');
+                    startBtn.disabled = false;
+                    return;
+                }
+
+                try {
+                    setStatus('Requesting ephemeral token from OpenAI...');
+                    const EPHEMERAL_KEY = await createEphemeralKey(userKey);
+
+                    setStatus('Acquiring microphone...');
+                    localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+                    setStatus('Creating RTCPeerConnection...');
+                    pc = new RTCPeerConnection();
+
+                    // Play remote audio when it arrives
+                    pc.ontrack = (ev) => {
+                        log('Received remote track');
+                        audioEl.srcObject = ev.streams[0];
+                    };
+
+                    pc.onconnectionstatechange = () => {
+                        log('Connection state: ' + pc.connectionState);
+                    };
+
+                    // Optional: handle remote data channel messages
+                    pc.ondatachannel = (ev) => {
+                        const ch = ev.channel;
+                        ch.onmessage = (m) => log('Data channel message:', m.data);
+                    };
+
+                    // Add local audio track to the peer connection
+                    const track = localStream.getAudioTracks()[0];
+                    if (track) pc.addTrack(track, localStream);
+
+                    // Create an outgoing data channel to receive events
+                    dc = pc.createDataChannel('oai-events');
+                    dc.onopen = () => log('Data channel opened');
+                    dc.onmessage = (m) => log('Event:', m.data);
+
+                    setStatus('Creating offer...');
+                    const offer = await pc.createOffer();
+                    await pc.setLocalDescription(offer);
+
+                    setStatus('Sending SDP to realtime backend...');
+                    const baseUrl = 'https://api.openai.com/v1/realtime/calls';
+                    const model = 'gpt-realtime';
+
+                    const sdpResp = await fetch(`${baseUrl}?model=${encodeURIComponent(model)}`, {
+                        method: 'POST',
+                        body: offer.sdp,
+                        headers: {
+                            Authorization: `Bearer ${EPHEMERAL_KEY}`,
+                            'Content-Type': 'application/sdp',
+                        },
+                    });
+
+                    if (!sdpResp.ok) throw new Error('Realtime backend returned HTTP ' + sdpResp.status);
+
+                    const answerSdp = await sdpResp.text();
+                    await pc.setRemoteDescription({ type: 'answer', sdp: answerSdp });
+
+                    setStatus('Connected');
+                    stopBtn.disabled = false;
+                    log('Session started successfully');
+                } catch (err) {
+                    log('Error:', err && err.message ? err.message : err);
+                    setStatus('Error: ' + (err && err.message ? err.message : 'unknown'));
+                    startBtn.disabled = false;
+                }
+            }
+
+            function stopSession() {
+                setStatus('Stopping session...');
+                if (pc) {
+                    try { pc.close(); } catch (e) { }
+                    pc = null;
+                }
+                if (localStream) {
+                    localStream.getTracks().forEach(t => t.stop());
+                    localStream = null;
+                }
+                stopBtn.disabled = true;
+                startBtn.disabled = false;
+                setStatus('Stopped');
+            }
+
+            startBtn.addEventListener('click', startSession);
+            stopBtn.addEventListener('click', stopSession);
+        })();
+    </script>
+</body>
+
+</html>
