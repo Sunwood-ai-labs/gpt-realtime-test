@@ -1,10 +1,29 @@
 {
   "type": "module",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "build:css": "tailwindcss -i ./src/tailwind.css -o ./styles/app.css --minify"
   },
   "dependencies": {
     "dotenv": "^17.2.1",
     "express": "^5.1.0"
-  }
+  },
+  "name": "gpt-realtime-test",
+  "version": "1.0.0",
+  "description": "<div align=\"center\">",
+  "main": "server.js",
+  "devDependencies": {
+    "tailwindcss": "^3.4.13"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Sunwood-ai-labs/gpt-realtime-test.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Sunwood-ai-labs/gpt-realtime-test/issues"
+  },
+  "homepage": "https://github.com/Sunwood-ai-labs/gpt-realtime-test#readme"
 }
