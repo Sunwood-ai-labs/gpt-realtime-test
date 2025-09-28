@@ -2,7 +2,11 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "build:css": "tailwindcss -i ./src/tailwind.css -o ./styles/app.css --minify"
+    "build:css": "tailwindcss -i ./src/tailwind.css -o ./styles/app.css --minify",
+    "lint:js": "node --check server.js scripts/realtime-session.js",
+    "lint:html": "htmlhint index.html develop.html",
+    "lint:md": "markdownlint README.md",
+    "lint": "npm run lint:js && npm run lint:html && npm run lint:md"
   },
   "dependencies": {
     "dotenv": "^17.2.1",
@@ -13,6 +17,8 @@
   "description": "<div align=\"center\">",
   "main": "server.js",
   "devDependencies": {
+    "htmlhint": "^1.7.1",
+    "markdownlint-cli": "^0.42.0",
     "tailwindcss": "^3.4.13"
   },
   "repository": {
