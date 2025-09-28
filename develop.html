@@ -51,12 +51,26 @@
         }
 
         input[type="text"],
-        input[type="password"] {
+        input[type="password"],
+        textarea {
             width: 100%;
             padding: .5rem;
             margin-top: .25rem;
             border: 1px solid #ccc;
-            border-radius: 4px
+            border-radius: 4px;
+            background: #0f172a;
+            color: #f8fafc;
+            caret-color: #38bdf8;
+        }
+
+        input[type="text"]::placeholder,
+        input[type="password"]::placeholder,
+        textarea::placeholder {
+            color: rgba(248, 250, 252, 0.5);
+        }
+
+        #systemPrompt {
+            background: #0b1120;
         }
     </style>
 </head>
@@ -71,6 +85,11 @@
     <main>
         <label for="apiKey">OpenAI API Key (will be used only in this browser session)</label>
         <input id="apiKey" type="password" placeholder="sk-..." aria-label="OpenAI API key" />
+
+        <label for="systemPrompt">System prompt (optional)</label>
+        <textarea id="systemPrompt" rows="4"
+            placeholder="You are a helpful voice agent for realtime monitoring. Use MCP tools when useful." aria-label="System prompt">You are a helpful voice agent for realtime monitoring. Use MCP tools when useful.</textarea>
+        <small style="display:block;margin-top:4px;color:#666">Updated prompt applies on the next session start.</small>
 
         <div style="margin-top:12px">
             <button id="startBtn">Start realtime session</button>
@@ -111,7 +130,7 @@
                 log(text);
             }
 
-            async function createEphemeralKey(userKey) {
+            async function createEphemeralKey(userKey, systemPrompt) {
                 // Assumption: OpenAI realtime ephemeral session endpoint is POST /v1/realtime/sessions
                 // We attempt to create a session and extract an ephemeral client secret from the JSON response.
                 // https://api.openai.com/v1/realtime/sessions OLD
@@ -136,6 +155,11 @@
                         tools: [mcpTool],
                     },
                 };
+
+                if (systemPrompt) {
+                    body.session.instructions = systemPrompt;
+                    log("Using custom system prompt (" + systemPrompt.length + " chars)");
+                }
 
                 const resp = await fetch(url, {
                     method: 'POST',
@@ -173,7 +197,8 @@
 
                 try {
                     setStatus('Requesting ephemeral token from OpenAI...');
-                    const EPHEMERAL_KEY = await createEphemeralKey(userKey);
+                    const systemPrompt = document.getElementById('systemPrompt')?.value.trim();
+                    const EPHEMERAL_KEY = await createEphemeralKey(userKey, systemPrompt);
 
                     setStatus('Acquiring microphone...');
                     localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
