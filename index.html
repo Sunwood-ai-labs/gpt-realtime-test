@@ -32,6 +32,93 @@
         #systemPrompt::placeholder {
             color: rgba(248, 250, 252, 0.55);
         }
+
+        #voiceSelect {
+            background-color: rgba(15, 23, 42, 0.9);
+            color: #f8fafc;
+            border: none;
+            width: 100%;
+            padding-block: 0.5rem;
+            border-radius: 1rem;
+        }
+
+        #voiceSelect:focus-visible {
+            outline: none;
+        }
+
+        #voiceSelect option {
+            background-color: rgba(15, 23, 42, 0.95);
+            color: #f8fafc;
+        }
+
+        .preset-card {
+            background-color: rgba(248, 250, 252, 0.05);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 1rem;
+            padding: 0.65rem 0.8rem;
+            min-width: 156px;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+        }
+
+        .preset-card:hover {
+            border-color: rgba(45, 212, 191, 0.55);
+            background-color: rgba(15, 118, 110, 0.18);
+        }
+
+        .preset-card[aria-pressed="true"] {
+            border-color: rgba(34, 211, 238, 0.9);
+            background-color: rgba(8, 145, 178, 0.18);
+        }
+
+        .preset-card:focus-visible {
+            outline: 2px solid rgba(34, 211, 238, 0.7);
+            outline-offset: 2px;
+        }
+
+        .preset-card__icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 9999px;
+            overflow: hidden;
+            display: grid;
+            place-items: center;
+            background-color: rgba(15, 23, 42, 0.75);
+            flex-shrink: 0;
+        }
+
+        .preset-card__icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .preset-card__icon i {
+            color: rgba(165, 243, 252, 0.9);
+            font-size: 1rem;
+        }
+
+        .preset-card__body {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.25rem;
+        }
+
+        .preset-card__name {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: rgba(226, 232, 240, 0.95);
+            line-height: 1.2;
+        }
+
+        .preset-card__caption {
+            font-size: 0.7rem;
+            color: rgba(148, 163, 184, 0.75);
+        }
+
     </style>
 </head>
 <body class="no-scrollbar min-h-screen bg-slate-950 text-white antialiased">
@@ -114,6 +201,17 @@
 
                         <div class="mt-6 text-left">
                             <label for="systemPrompt" class="block text-xs font-semibold uppercase tracking-widest text-white/60">System Prompt</label>
+                            <div class="mt-3 space-y-2">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-[11px] font-semibold uppercase tracking-[0.35em] text-white/40">Preset</span>
+                                    <button id="presetReload" type="button" class="flex items-center gap-1 rounded-full bg-white/10 px-3 py-1 text-[11px] font-medium text-white/70 ring-1 ring-white/15 transition hover:bg-white/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/60" aria-label="プリセットを再読み込み">
+                                        <i class="fa-solid fa-rotate-right text-[10px]" aria-hidden="true"></i>
+                                        <span>再読込</span>
+                                    </button>
+                                </div>
+                                <div id="presetList" class="no-scrollbar flex gap-2 overflow-x-auto pt-1" role="listbox" aria-label="System prompt presets"></div>
+                                <p id="presetStatus" class="text-[11px] text-white/50">プリセットを読み込み中...</p>
+                            </div>
                             <textarea id="systemPrompt" class="mt-2 h-28 w-full resize-y rounded-2xl border border-white/15 bg-slate-950/80 px-4 py-3 text-sm text-white placeholder:text-white/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/60" placeholder="例: あなたは運用支援用のボイスエージェントです。状況に応じて MCP ツールを活用し、簡潔に回答してください。">あなたは運用支援用のボイスエージェントです。状況に応じて MCP ツールを活用し、簡潔に回答してください。</textarea>
                             <p class="mt-2 text-[11px] text-white/50">内容変更は次回 Start 実行時のセッションから反映されます。</p>
                         </div>
@@ -271,7 +369,7 @@
         Background: WebGL Fluid Simulation by PavelDoGreat (MIT)
     </div>
 
-    <script type="module" src="./scripts/fluid-background.js"></script>
+    <script type="module" src="./scripts/fluid-background.js"></script>\n    <script src="./scripts/preset-loader.js"></script>
     <script src="./scripts/realtime-session.js"></script>
 </body>
 </html>
