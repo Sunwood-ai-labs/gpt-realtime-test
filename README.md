@@ -39,7 +39,7 @@ OpenAI Realtime API voice demo with optional MCP tool integration.
    ```cmd
    npm start
    ```
-4. ブラウザで http://localhost:3000 または http://localhost:3000/frontend.html にアクセスし、Realtime セッションを開始します。
+4. ブラウザで http://localhost:3000 または http://localhost:3000/frontend.html にアクセスし、必要に応じて System Prompt テキストエリアを調整してから Realtime セッションを開始します。
 
 ## ⚙️ 環境変数
 | 変数 | 必須 | 説明 |
@@ -53,11 +53,16 @@ OpenAI Realtime API voice demo with optional MCP tool integration.
 `.env.example` にサンプル値を揃えているので、必要項目の確認に活用してください。
 
 ## 🔧 仕組み
-- ブラウザデモは `/token` にリクエストし、サーバーが `https://api.openai.com/v1/realtime/client_secrets` へ POST してエフェメラルトークンを取得します。
-- セッション設定で `tools` に MCP サーバーを宣言し、必要に応じて `get_time_mcp_get_jp_time` を呼び出します。
-- `server.js` は Express で静的ファイルを返しつつ、JSON ボディを 1 MB まで受け付けるよう設定しています。
-- コンソール UI (`index.html`) からシステムプロンプトを直接編集でき、次回セッション開始時に Realtime モデルへ反映されます。
+- **トークン発行**: ブラウザデモは `/token` にリクエストし、サーバーが `https://api.openai.com/v1/realtime/client_secrets` へ POST してエフェメラルトークンを取得します。
+- **MCP ツール**: セッション設定で `tools` に MCP サーバーを宣言し、必要に応じて `get_time_mcp_get_jp_time` を呼び出します。
+- **サーバー構成**: `server.js` は Express で静的ファイルを返しつつ、JSON ボディを 1 MB まで受け付けるよう設定しています。
+- **コンソール UI**: `index.html` からシステムプロンプトを直接編集でき、次回セッション開始時に Realtime モデルへ反映されます。
 
+## 🧩 プリセット & ツール設定
+- `presets/` 配下の各 Markdown はコンソール UI の System Prompt プリセットになります。冒頭の Front Matter で `name`・`icon`・`description` を指定し、その下の本文が実際に挿入されるプロンプト本文です。
+- 新しいプリセットは `presets/your-preset-id.md` のように作成し、アプリ画面右上の Reload ボタンで再読み込みすると選択肢に反映されます。`[a-z0-9_-]` 以外の文字は ID として使用できない点に注意してください。
+- `tools.json` は Realtime セッションに公開する MCP ツールのリストです。`server_label` と `server_url` を指定し、必要なら `headers` に環境変数プレースホルダー（例: `$MCP_AUTHORIZATION`）を埋め込めます。
+- 別パスの設定ファイルを使いたい場合は、環境変数 `MCP_TOOLS_PATH` で JSON ファイルの場所を上書きできます。パースに失敗するとツールは無効化されるので、配列形式の JSON を保ってください。
 ## 🧪 MCP 検証 (任意)
 ```powershell
 $body = @{ jsonrpc = "2.0"; id = 1; method = "initialize"; params = @{ protocolVersion = "2025-03-26"; clientInfo = @{ name = "curl"; version = "0.1" }; capabilities = @{} } } | ConvertTo-Json -Compress
@@ -83,7 +88,5 @@ curl.exe -i `
 ## 📸 スクリーンショット
 | *アプリの操作画面スクリーンショットをここに追加してください。* |
 | :--: |
-
-
 
 
