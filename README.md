@@ -56,6 +56,7 @@ OpenAI Realtime API voice demo with optional MCP tool integration.
 - ブラウザデモは `/token` にリクエストし、サーバーが `https://api.openai.com/v1/realtime/client_secrets` へ POST してエフェメラルトークンを取得します。
 - セッション設定で `tools` に MCP サーバーを宣言し、必要に応じて `get_time_mcp_get_jp_time` を呼び出します。
 - `server.js` は Express で静的ファイルを返しつつ、JSON ボディを 1 MB まで受け付けるよう設定しています。
+- コンソール UI (`index.html`) からシステムプロンプトを直接編集でき、次回セッション開始時に Realtime モデルへ反映されます。
 
 ## 🧪 MCP 検証 (任意)
 ```powershell
