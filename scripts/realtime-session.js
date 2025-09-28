@@ -13,6 +13,7 @@
   const copyLogBtn = document.getElementById('copyLog');
   const muteToggleBtn = document.getElementById('muteToggle');
   const muteLabel = document.getElementById('muteLabel');
+  const systemPromptEl = document.getElementById('systemPrompt');
 
   let pc = null;
   let localStream = null;
@@ -46,10 +47,26 @@
     setStatus('Requesting ephemeral token...', 'loading');
 
     try {
-      const tokenResp = await fetch('/token');
+      const systemPrompt = systemPromptEl ? systemPromptEl.value.trim() : '';
+      if (systemPrompt) {
+        log('Using custom system prompt (' + systemPrompt.length + ' chars)');
+      }
+
+      const tokenResp = await fetch('/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ systemPrompt })
+      });
       if (!tokenResp.ok) throw new Error('Failed to fetch /token');
       const tokenData = await tokenResp.json();
-      const EPHEMERAL_KEY = tokenData.value;
+      const EPHEMERAL_KEY =
+        tokenData?.value ||
+        tokenData?.client_secret?.value ||
+        tokenData?.client_secret?.secret ||
+        tokenData?.client_secret;
+      if (!EPHEMERAL_KEY) {
+        throw new Error('Ephemeral key not found in /token response');
+      }
       log('Ephemeral key received');
 
       setStatus('Acquiring microphone...', 'loading');
@@ -128,7 +145,7 @@
       log('Error:', error && error.message ? error.message : error);
       setStatus('Error: ' + (error && error.message ? error.message : 'unknown'), 'idle');
       startBtn.disabled = false;
-      micStatusEl.textContent = '待機中';
+      micStatusEl.textContent = '未取得';
       dataChannelStatusEl.textContent = '未接続';
     }
   }
@@ -160,7 +177,7 @@
     setStatus('Stopped', 'idle');
     connectionStateEl.textContent = '---';
     dataChannelStatusEl.textContent = '未接続';
-    micStatusEl.textContent = '待機中';
+    micStatusEl.textContent = '未取得';
   }
 
   clearLogBtn?.addEventListener('click', () => {
