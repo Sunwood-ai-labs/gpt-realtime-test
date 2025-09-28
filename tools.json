@@ -1,0 +1,17 @@
+[
+  {
+    "type": "mcp",
+    "server_label": "gradio-github-issue",
+    "server_url": "https://makiai-gradio-mcp-github-issue.hf.space/gradio_api/mcp/",
+    "require_approval": "never",
+    "headers": {
+      "Authorization": "$MCP_AUTHORIZATION"
+    }
+  },
+  {
+    "type": "mcp",
+    "server_label": "hf-get-time",
+    "server_url": "https://makiai-get-time-mcp.hf.space/gradio_api/mcp/",
+    "require_approval": "never"
+  }
+]
