@@ -40,20 +40,31 @@ if (defaultMcpUrl) {
     console.warn("Warning: MCP_SERVER_URL is not set. The realtime session will not expose an MCP tool.");
 }
 
-const sessionConfig = JSON.stringify({
-    session: {
-        type: "realtime",
-        model: "gpt-realtime",
-        audio: {
-            output: {
-                voice: "cedar",
-            },
-        },
-        tools,
-    },
-});
+const defaultVoice = process.env.REALTIME_VOICE || "cedar";
 
-app.get("/token", async (req, res) => {
+app.post("/token", async (req, res) => {
+    if (!apiKey) {
+        return res.status(500).json({ error: "OPENAI_API_KEY is not configured on the server" });
+    }
+
+    const systemPrompt = typeof req.body?.systemPrompt === "string" ? req.body.systemPrompt.trim() : "";
+    const sessionConfig = {
+        session: {
+            type: "realtime",
+            model: "gpt-realtime",
+            audio: {
+                output: {
+                    voice: defaultVoice,
+                },
+            },
+            tools,
+        },
+    };
+
+    if (systemPrompt) {
+        sessionConfig.session.instructions = systemPrompt;
+    }
+
     try {
         const response = await fetch("https://api.openai.com/v1/realtime/client_secrets", {
             method: "POST",
@@ -61,7 +72,7 @@ app.get("/token", async (req, res) => {
                 Authorization: `Bearer ${apiKey}`,
                 "Content-Type": "application/json",
             },
-            body: sessionConfig,
+            body: JSON.stringify(sessionConfig),
         });
 
         const data = await response.json();
