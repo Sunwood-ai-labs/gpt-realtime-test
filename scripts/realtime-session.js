@@ -14,6 +14,7 @@
   const muteToggleBtn = document.getElementById('muteToggle');
   const muteLabel = document.getElementById('muteLabel');
   const systemPromptEl = document.getElementById('systemPrompt');
+  const voiceSelect = document.getElementById('voiceSelect');
 
   let pc = null;
   let localStream = null;
@@ -51,11 +52,15 @@
       if (systemPrompt) {
         log('Using custom system prompt (' + systemPrompt.length + ' chars)');
       }
+      const selectedVoice = voiceSelect ? voiceSelect.value : '';
+      if (selectedVoice) {
+        log('Requesting voice: ' + selectedVoice);
+      }
 
       const tokenResp = await fetch('/token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ systemPrompt })
+        body: JSON.stringify({ systemPrompt, voice: selectedVoice })
       });
       if (!tokenResp.ok) throw new Error('Failed to fetch /token');
       const tokenData = await tokenResp.json();
@@ -192,6 +197,10 @@
     } catch (error) {
       log('Failed to copy log: ' + error);
     }
+  });
+
+  voiceSelect?.addEventListener('change', () => {
+    log('Voice selected: ' + voiceSelect.value);
   });
 
   muteToggleBtn?.addEventListener('click', () => {

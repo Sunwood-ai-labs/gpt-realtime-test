@@ -22,23 +22,17 @@ const mcpServerLabel = process.env.MCP_SERVER_LABEL || "hf-get-time";
 const mcpRequireApproval = process.env.MCP_REQUIRE_APPROVAL || "never";
 const mcpAuthorization = process.env.MCP_AUTHORIZATION;
 
-const tools = [];
-if (defaultMcpUrl) {
-    const mcpTool = {
-        type: "mcp",
-        server_label: mcpServerLabel,
-        server_url: defaultMcpUrl,
-        require_approval: mcpRequireApproval,
-    };
-
-    if (mcpAuthorization) {
-        mcpTool.authorization = mcpAuthorization;
-    }
-
-    tools.push(mcpTool);
-} else {
-    console.warn("Warning: MCP_SERVER_URL is not set. The realtime session will not expose an MCP tool.");
-}
+const tools = [
+  {
+    type: "mcp",
+    server_label: mcpServerLabel,
+    server_url: defaultMcpUrl,
+    require_approval: mcpRequireApproval,
+    headers: {
+      Authorization: `Bearer ${process.env.GH_PAT_ONIZUKA}`,
+    },
+  },
+];
 
 const defaultVoice = process.env.REALTIME_VOICE || "cedar";
 
@@ -48,13 +42,15 @@ app.post("/token", async (req, res) => {
     }
 
     const systemPrompt = typeof req.body?.systemPrompt === "string" ? req.body.systemPrompt.trim() : "";
+    const requestedVoice = typeof req.body?.voice === "string" ? req.body.voice.trim() : "";
+    const voiceFromRequest = /^[a-z0-9-]{1,32}$/i.test(requestedVoice) ? requestedVoice.toLowerCase() : "";
     const sessionConfig = {
         session: {
             type: "realtime",
             model: "gpt-realtime",
             audio: {
                 output: {
-                    voice: defaultVoice,
+                    voice: voiceFromRequest || defaultVoice,
                 },
             },
             tools,
